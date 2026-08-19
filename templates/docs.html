@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>RAMA API Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@scalar/api-reference/style.css" />
+</head>
+
+<body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference">
+    </script>
+
+    <script>
+        Scalar.createApiReference('#app', {
+            url: '{% url "openapi-schema" %}',
+            theme: 'purple',
+            layout: 'modern',
+            hideDownloadButton: false,
+            hideModels: false,
+            darkMode: true,
+            searchHotKey: 'k'
+
+        });
+    </script>
+
+</body>
+
+</html>

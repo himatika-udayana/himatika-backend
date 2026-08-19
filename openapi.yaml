@@ -1,0 +1,980 @@
+openapi: 3.0.3
+info:
+  title: HIMATIKA Backend API
+  description: Dokumentasi API backend HIMATIKA dalam format OpenAPI/Swagger.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+paths:
+  /api/auth/register/:
+    post:
+      tags:
+        - Auth
+      summary: Register akun baru
+      description: Mendaftarkan akun anggota baru.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registrasi berhasil.
+        '400':
+          description: Validasi gagal.
+
+  /api/auth/verify-email/:
+    get:
+      tags:
+        - Auth
+      summary: Verifikasi email
+      description: Memverifikasi email melalui query parameter uid dan token.
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+        - in: query
+          name: token
+          schema:
+            type: string
+        - in: query
+          name: purpose
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verifikasi berhasil.
+        '400':
+          description: Token tidak valid.
+        '410':
+          description: Token kedaluwarsa.
+    post:
+      tags:
+        - Auth
+      summary: Verifikasi email via body
+      description: Memverifikasi email melalui body request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                token:
+                  type: string
+                purpose:
+                  type: string
+      responses:
+        '200':
+          description: Verifikasi berhasil.
+
+  /api/auth/resend-verification/:
+    post:
+      tags:
+        - Auth
+      summary: Kirim ulang link verifikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: Link verifikasi dikirim.
+        '404':
+          description: Email tidak ditemukan.
+
+  /api/auth/login/:
+    post:
+      tags:
+        - Auth
+      summary: Login pengguna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login berhasil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtResponse'
+
+  /api/auth/refresh/:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: Memperbarui access token menggunakan refresh token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtResponse'
+
+  /api/auth/logout/:
+    post:
+      tags:
+        - Auth
+      summary: Logout pengguna
+      description: Melakukan blacklist terhadap refresh token agar token tidak bisa dipakai lagi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logout berhasil.
+
+  /api/auth/change-password/:
+    post:
+      tags:
+        - Auth
+      summary: Ganti password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password berhasil diubah.
+        '400':
+          description: Password lama salah.
+
+  /api/auth/reset-password/:
+    post:
+      tags:
+        - Auth
+      summary: Konfirmasi reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password berhasil direset.
+
+  /api/auth/forgot-password/:
+    post:
+      tags:
+        - Auth
+      summary: Minta link reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: Link reset password dikirim.
+
+  /api/auth/me/:
+    get:
+      tags:
+        - Auth
+      summary: Ambil data user sedang login
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Data user berhasil diambil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMeResponse'
+
+  /api/posts/:
+    get:
+      tags:
+        - Konten
+      summary: Daftar post publik
+      responses:
+        '200':
+          description: Daftar post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostResponse'
+
+  /api/posts/{slug}/:
+    get:
+      tags:
+        - Konten
+      summary: Detail post berdasarkan slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          description: Post tidak ditemukan.
+
+  /api/faq/:
+    get:
+      tags:
+        - Konten
+      summary: Daftar FAQ aktif
+      responses:
+        '200':
+          description: Daftar FAQ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFaqResponse'
+
+  /api/arsip/:
+    get:
+      tags:
+        - Arsip
+      summary: Daftar arsip
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Daftar arsip.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArsipResponse'
+
+  /api/arsip/{id}/:
+    get:
+      tags:
+        - Arsip
+      summary: Detail arsip
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail arsip.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArsipResponse'
+        '404':
+          description: Arsip tidak ditemukan.
+
+  /api/arsip/{id}/download/:
+    get:
+      tags:
+        - Arsip
+      summary: Download arsip
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: URL download atau file content.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+        '404':
+          description: Arsip tidak ditemukan.
+
+  /api/koperasi/:
+    get:
+      tags:
+        - Koperasi
+      summary: Daftar produk koperasi
+      responses:
+        '200':
+          description: Daftar produk.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProdukResponse'
+
+  /api/koperasi/{id}/:
+    get:
+      tags:
+        - Koperasi
+      summary: Detail produk koperasi
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail produk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdukResponse'
+
+  /api/mathquiz/:
+    get:
+      tags:
+        - Mathquiz
+      summary: Daftar quiz set
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: topik
+          schema:
+            type: string
+        - in: query
+          name: level_kesulitan
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar quiz set.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuizSetListResponse'
+
+  /api/mathquiz/{id}/:
+    get:
+      tags:
+        - Mathquiz
+      summary: Detail quiz set
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail quiz set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizSetDetailResponse'
+
+  /api/mathquiz/attempts/:
+    get:
+      tags:
+        - Mathquiz
+      summary: Riwayat attempt pengguna
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Riwayat attempt.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuizAttemptResponse'
+    post:
+      tags:
+        - Mathquiz
+      summary: Mulai attempt quiz
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MulaiAttemptRequest'
+      responses:
+        '201':
+          description: Attempt berhasil dibuat.
+
+  /api/mathquiz/{id}/submit/:
+    patch:
+      tags:
+        - Mathquiz
+      summary: Selesaikan attempt quiz
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitQuizRequest'
+      responses:
+        '200':
+          description: Attempt selesai.
+
+  /api/mathquiz/leaderboard/:
+    get:
+      tags:
+        - Mathquiz
+      summary: Leaderboard quiz
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Daftar leaderboard.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardResponse'
+
+  /api/pengaturan/detail/:
+    get:
+      tags:
+        - Pengaturan
+      summary: Ambil pengaturan website
+      responses:
+        '200':
+          description: Data pengaturan website.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PengaturanResponse'
+
+  /api/profil/:
+    get:
+      tags:
+        - Profil
+      summary: Ambil profil utama
+      responses:
+        '200':
+          description: Data profil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilResponse'
+
+  /api/profil/detail/:
+    get:
+      tags:
+        - Profil
+      summary: Detail profil
+      responses:
+        '200':
+          description: Data profil detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilResponse'
+
+  /api/profil/misi/:
+    get:
+      tags:
+        - Profil
+      summary: Daftar misi
+      responses:
+        '200':
+          description: Daftar misi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MisiResponse'
+
+  /api/profil/pengurus/:
+    get:
+      tags:
+        - Profil
+      summary: Daftar pengurus
+      responses:
+        '200':
+          description: Daftar pengurus.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PengurusResponse'
+
+  /api/profil/program-kerja/:
+    get:
+      tags:
+        - Profil
+      summary: Daftar program kerja
+      responses:
+        '200':
+          description: Daftar program kerja.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgramKerjaResponse'
+
+  /api/rama/form/:
+    get:
+      tags:
+        - Rama
+      summary: Ambil form RAMA
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Form RAMA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RamaFormResponse'
+
+  /api/rama/submit/:
+    post:
+      tags:
+        - Rama
+      summary: Submit RAMA
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RamaSubmitRequest'
+      responses:
+        '201':
+          description: Submission berhasil dibuat.
+
+  /api/rama/hasil/:
+    get:
+      tags:
+        - Rama
+      summary: Ambil hasil submission RAMA
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Hasil submission.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RamaSubmissionResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, nama_lengkap, nim, angkatan]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        nama_lengkap:
+          type: string
+        nim:
+          type: string
+        angkatan:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    RefreshRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+    LogoutRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+    ResetPasswordRequest:
+      type: object
+      required: [uid, token, new_password]
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+    PaginatedPostResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostResponse'
+    PaginatedFaqResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FaqResponse'
+    JwtResponse:
+      type: object
+      properties:
+        refresh:
+          type: string
+        access:
+          type: string
+    UserMeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        nama_lengkap:
+          type: string
+        nim:
+          type: string
+        angkatan:
+          type: string
+        is_verified:
+          type: boolean
+    PostResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        slug:
+          type: string
+        konten:
+          type: string
+        publisher:
+          type: string
+        status:
+          type: string
+    FaqResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        pertanyaan:
+          type: string
+        jawaban:
+          type: string
+    ArsipResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        tipe_display:
+          type: string
+        link_gdrive:
+          type: string
+        mata_kuliah:
+          type: string
+        tahun:
+          type: integer
+        semester_display:
+          type: string
+        deskripsi:
+          type: string
+        diunggah_oleh_nama:
+          type: string
+        tanggal_upload:
+          type: string
+          format: date-time
+    ProdukResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama_produk:
+          type: string
+        deskripsi:
+          type: string
+        harga:
+          type: integer
+        status:
+          type: string
+        link_gform_pesan:
+          type: string
+    QuizSetListResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        topik:
+          type: string
+        level_kesulitan:
+          type: string
+        jumlah_soal:
+          type: integer
+    QuizSetDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        deskripsi:
+          type: string
+        topik:
+          type: string
+        level_kesulitan:
+          type: string
+        total_poin_maksimal:
+          type: integer
+        jumlah_soal:
+          type: integer
+        dibuat_oleh_nama:
+          type: string
+        soal:
+          type: array
+          items:
+            type: object
+    QuizAttemptResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        quiz_judul:
+          type: string
+        skor:
+          type: integer
+        total_poin:
+          type: integer
+        status:
+          type: string
+        waktu_mulai:
+          type: string
+          format: date-time
+        waktu_selesai:
+          type: string
+          format: date-time
+    MulaiAttemptRequest:
+      type: object
+      required: [quiz_set]
+      properties:
+        quiz_set:
+          type: integer
+    SubmitQuizRequest:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              jawaban:
+                type: string
+    LeaderboardResponse:
+      type: object
+      properties:
+        username:
+          type: string
+        total_poin:
+          type: integer
+        total_quiz:
+          type: integer
+        total_benar:
+          type: integer
+    PengaturanResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama_website:
+          type: string
+        deskripsi:
+          type: string
+    ProfilResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        sejarah:
+          type: string
+        visi:
+          type: string
+        periode_kepengurusan:
+          type: string
+        logo:
+          type: string
+    MisiResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        urutan:
+          type: integer
+        deskripsi:
+          type: string
+    PengurusResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        bidang_display:
+          type: string
+        jabatan_display:
+          type: string
+    ProgramKerjaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama_proker:
+          type: string
+        deskripsi:
+          type: string
+        bidang_display:
+          type: string
+        progres:
+          type: integer
+        status:
+          type: string
+    RamaFormResponse:
+      type: object
+      properties:
+        sudah_submit:
+          type: boolean
+        semester:
+          type: object
+        kategori:
+          type: array
+          items:
+            type: object
+        submission:
+          type: object
+    RamaSubmitRequest:
+      type: object
+      required: [jawaban]
+      properties:
+        jawaban:
+          type: array
+          items:
+            type: object
+            properties:
+              kategori:
+                type: integer
+              kepuasan:
+                type: string
+              isi_aspirasi:
+                type: string
+    RamaSubmissionResponse:
+      type: object
+      properties:
+        semester:
+          type: string
+        tanggal_submit:
+          type: string
+          format: date-time
+        status:
+          type: string
+        jawaban:
+          type: array
+          items:
+            type: object
