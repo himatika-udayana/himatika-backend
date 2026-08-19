@@ -8,7 +8,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements-runtime.txt && python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate && gunicorn config.wsgi:application
+    startCommand: python manage.py migrate && python manage.py create_admin_from_env && python manage.py seed_data && gunicorn config.wsgi:application
     healthCheckPath: /healthz/
     envVars:
       - key: SECRET_KEY
@@ -56,4 +56,8 @@ services:
       - key: GOOGLE_SHEET_ID
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
         sync: false

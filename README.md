@@ -166,6 +166,8 @@ File [render.yaml](render.yaml) sudah berisi definisi PostgreSQL dan web service
   - `pip install -r requirements-runtime.txt`
   - `python manage.py collectstatic --noinput`
   - `python manage.py migrate`
+  - `python manage.py create_admin_from_env`
+  - `python manage.py seed_data`
   - `gunicorn config.wsgi:application`
 
 ### Environment variable Render
@@ -186,20 +188,19 @@ Blueprint otomatis membuat `SECRET_KEY`, `DATABASE_URL`, dan pengaturan HTTPS da
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
 | `GOOGLE_SHEET_ID` | ID spreadsheet RAMA |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Isi JSON service account satu baris atau format JSON valid |
+| `DJANGO_SUPERUSER_EMAIL` | Email admin awal |
+| `DJANGO_SUPERUSER_PASSWORD` | Password admin awal |
 
 Untuk `GOOGLE_SERVICE_ACCOUNT_JSON`, buat service account di Google Cloud, aktifkan Google Sheets API, lalu bagikan spreadsheet kepada email service account sebagai Editor. Jangan upload file `credentials/google-service-account.json` ke repository; service production membaca kredensial dari environment.
 
 ### Setelah deploy
 
 1. Buka `https://domain-api/healthz/`; response yang benar adalah `ok`.
-2. Buka `https://domain-api/admin/` dan buat akun admin dari **Render > Shell**:
-
-```bash
-python manage.py createsuperuser
-```
-
+2. Buka `https://domain-api/admin/` dan login dengan `DJANGO_SUPERUSER_EMAIL` serta `DJANGO_SUPERUSER_PASSWORD`.
 3. Uji endpoint login dan endpoint publik dari frontend.
 4. Periksa **Logs** Render bila migrasi, email, Cloudinary, atau Google Sheets gagal.
+
+Command `create_admin_from_env` idempotent: restart service tidak membuat admin duplikat dan tidak mengganti password user yang sudah ada. Setelah berhasil login, password environment dapat diganti atau dihapus dari Render.
 
 ### Deploy manual dan rollback
 
@@ -214,21 +215,13 @@ Setiap push ke branch yang terhubung akan memicu deploy otomatis. Deploy manual 
 
 ## Langkah Seeding Data Awal
 
-Untuk mengisi data awal (contoh: profil organisasi, pengaturan website, kategori RAMA, atau data publik), jalankan perintah management command jika tersedia.
-
-Contoh:
+Seed data dijalankan otomatis pada setiap start service melalui:
 
 ```bash
-python manage.py shell
+python manage.py seed_data
 ```
 
-Atau jika terdapat custom command:
-
-```bash
-python manage.py <command_name>
-```
-
-Jika belum ada seeder khusus, Anda dapat membuat fixture atau custom management command untuk data awal.
+Command ini menggunakan `update_or_create`, sehingga aman untuk dijalankan ulang. Jangan gunakan opsi `--reset` di production karena dapat menghapus kategori RAMA.
 
 ## Panduan Contributor Workflow
 
